@@ -46,18 +46,16 @@ while true; do
         break
     fi
 
-    # Run Ralph iteration with selected prompt
-    # -p: Headless mode (non-interactive, reads from stdin)
-    # --dangerously-skip-permissions: Auto-approve all tool calls (YOLO mode)
-    # --output-format=stream-json: Structured output for logging/monitoring
-    # --model opus: Primary agent uses Opus for complex reasoning (task selection, prioritization)
-    #               Can use 'sonnet' in build mode for speed if plan is clear and tasks well-defined
-    # --verbose: Detailed execution logging
-    cat "$PROMPT_FILE" | claude -p \
-        --dangerously-skip-permissions \
-        --output-format=stream-json \
-        --model opus \
-        --verbose
+    # Run Codex iteration with selected prompt
+    # codex exec: Non-interactive mode (reads from stdin with -)
+    # --yolo: Auto-approve all tool calls (dangerously bypass approvals and sandbox)
+    # --json: Structured JSON output for logging/monitoring
+    # --model: Use gpt-5.2-codex for both plan and build modes (latest ChatGPT Codex 5.2 model)
+    #          Most advanced agentic coding model optimized for real-world engineering
+    cat "$PROMPT_FILE" | codex exec - \
+        --yolo \
+        --json \
+        --model gpt-5.2-codex
 
     # Push changes after each iteration
     git push origin "$CURRENT_BRANCH" || {
