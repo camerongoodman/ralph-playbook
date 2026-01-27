@@ -21,6 +21,8 @@ Below is the result - a (likely OCD-fueled) Ralph Playbook that organizes the mi
 > [!TIP]
 > View as [📖 Formatted Guide →](https://ClaytonFarr.github.io/ralph-playbook/)
 
+Hope this helps you out - [@ClaytonFarr](https://x.com/ClaytonFarr)
+
 ---
 
 ## Table of Contents
@@ -218,7 +220,9 @@ And remember, _the plan is disposable:_
 
 ## Loop Mechanics
 
-### Outer Loop Control
+### I. Task Selection
+
+`loop.sh` acts in effect as an 'outer loop' where each loop = a single task (in separate sessions). When the task is completed, `loop.sh` kicks off a fresh session to select the next task, if any remaining tasks are available.
 
 Geoff's initial minimal form of `loop.sh` script:
 
@@ -233,16 +237,20 @@ _What controls task continuation?_
 The continuation mechanism is elegantly simple:
 
 1. _Bash loop runs_ → feeds `PROMPT.md` to claude
-2. _PROMPT.md instructs_ → "Study IMPLEMENTATION_PLAN.md and choose the most important thing"
+2. _PROMPT.md instructs_ → "Study IMPLEMENTATION_PLAN.md and choose the most important thing..."
 3. _Agent completes one task_ → updates IMPLEMENTATION_PLAN.md on disk, commits, exits
 4. _Bash loop restarts immediately_ → fresh context window
-5. _Agent reads updated plan_ → picks next most important thing
+5. _Agent reads updated plan_ → picks next most important thing...
 
 _Key insight:_ The IMPLEMENTATION_PLAN.md file persists on disk between iterations and acts as shared state between otherwise isolated loop executions. Each iteration deterministically loads the same files (`PROMPT.md` + `AGENTS.md` + `specs/*`) and reads the current state from disk.
 
 _No sophisticated orchestration needed_ - just a dumb bash loop that keeps restarting the agent, and the agent figures out what to do next by reading the plan file each time.
 
-### Inner Loop Control (Task Execution)
+### II. Task Execution
+
+Each task is prompted to keep doing its work against backpressure (tests, etc) until it passes - creating a pseudo inner 'loop' (in single session).
+
+This inner loop is just internal self-correction / iterative reasoning within one long model response, powered by backpressure prompts, tool use, and subagents. It's not a loop in the programming sense.
 
 A single task execution has no hard technical limit. Control relies on:
 
@@ -252,9 +260,9 @@ A single task execution has no hard technical limit. Control relies on:
 
 _Ralph can go in circles, ignore instructions, or take wrong directions_ - this is expected and part of the tuning process. When Ralph "tests you" by failing in specific ways, you add guardrails to the prompt or adjust backpressure mechanisms. The nondeterminism is manageable through observation and iteration.
 
-### Enhanced Loop Example
+### Enhanced `loop.sh` Example
 
-Wraps core loop with mode selection (plan/build), max-iterations support, and git push after each iteration.
+Wraps core loop with mode selection (plan/build), with max-iterations for max number of tasks to complete, and git push after each iteration.
 
 _This enhancement uses two saved prompt files:_
 
@@ -265,10 +273,10 @@ _This enhancement uses two saved prompt files:_
 #!/bin/bash
 # Usage: ./loop.sh [plan] [max_iterations]
 # Examples:
-#   ./loop.sh              # Build mode, unlimited iterations
-#   ./loop.sh 20           # Build mode, max 20 iterations
-#   ./loop.sh plan         # Plan mode, unlimited iterations
-#   ./loop.sh plan 5       # Plan mode, max 5 iterations
+#   ./loop.sh              # Build mode, unlimited tasks
+#   ./loop.sh 20           # Build mode, max 20 tasks
+#   ./loop.sh plan         # Plan mode, unlimited tasks
+#   ./loop.sh plan 5       # Plan mode, max 5 tasks
 
 # Parse arguments
 if [ "$1" = "plan" ]; then
@@ -277,7 +285,7 @@ if [ "$1" = "plan" ]; then
     PROMPT_FILE="PROMPT_plan.md"
     MAX_ITERATIONS=${2:-0}
 elif [[ "$1" =~ ^[0-9]+$ ]]; then
-    # Build mode with max iterations
+    # Build mode with max tasks
     MODE="build"
     PROMPT_FILE="PROMPT_build.md"
     MAX_ITERATIONS=$1
@@ -295,7 +303,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "Mode:   $MODE"
 echo "Prompt: $PROMPT_FILE"
 echo "Branch: $CURRENT_BRANCH"
-[ $MAX_ITERATIONS -gt 0 ] && echo "Max:    $MAX_ITERATIONS iterations"
+[ $MAX_ITERATIONS -gt 0 ] && echo "Max:    $MAX_ITERATIONS iterations (number of tasks)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Verify prompt file exists
@@ -306,7 +314,7 @@ fi
 
 while true; do
     if [ $MAX_ITERATIONS -gt 0 ] && [ $ITERATION -ge $MAX_ITERATIONS ]; then
-        echo "Reached max iterations: $MAX_ITERATIONS"
+        echo "Reached max iterations (number of tasks): $MAX_ITERATIONS"
         break
     fi
 
@@ -341,7 +349,7 @@ _Mode selection:_
 
 _Max-iterations:_
 
-- Limits the _outer loop_ (number of tasks attempted; NOT tool calls within a single task)
+- Limits the _task selection loop_ (number of tasks attempted; NOT tool calls within a single task)
 - Each iteration = one fresh context window = one task from IMPLEMENTATION_PLAN.md = one commit
 - `./loop.sh` runs unlimited (manual stop with Ctrl+C)
 - `./loop.sh 20` runs max 20 iterations then stops
@@ -374,7 +382,7 @@ project-root/
 
 ### `loop.sh`
 
-The outer loop script that orchestrates Ralph iterations.
+The primary loop script that orchestrates Ralph iterations.
 
 See [Loop Mechanics](#loop-mechanics) section for detailed implementation examples and configuration options.
 
@@ -710,7 +718,7 @@ interface ReviewResult {
 function createReview(config: {
   criteria: string; // What to evaluate (behavioral, observable)
   artifact: string; // Text content OR screenshot path
-  intelligence?: 'fast' | 'smart'; // Optional, defaults to 'fast'
+  intelligence?: "fast" | "smart"; // Optional, defaults to 'fast'
 }): Promise<ReviewResult>;
 ```
 
@@ -731,37 +739,38 @@ The fixture implementation selects appropriate models. (Examples are current opt
 ##### `llm-review.test.ts` - Shows Ralph how to use it (text and vision examples):
 
 ```typescript
-import { createReview } from '@/lib/llm-review';
+import { createReview } from "@/lib/llm-review";
 
 // Example 1: Text evaluation
-test('welcome message tone', async () => {
+test("welcome message tone", async () => {
   const message = generateWelcomeMessage();
   const result = await createReview({
     criteria:
-      'Message uses warm, conversational tone appropriate for design professionals while clearly conveying value proposition',
+      "Message uses warm, conversational tone appropriate for design professionals while clearly conveying value proposition",
     artifact: message, // Text content
   });
   expect(result.pass).toBe(true);
 });
 
 // Example 2: Vision evaluation (screenshot path)
-test('dashboard visual hierarchy', async () => {
-  await page.screenshot({ path: './tmp/dashboard.png' });
+test("dashboard visual hierarchy", async () => {
+  await page.screenshot({ path: "./tmp/dashboard.png" });
   const result = await createReview({
-    criteria: 'Layout demonstrates clear visual hierarchy with obvious primary action',
-    artifact: './tmp/dashboard.png', // Screenshot path
+    criteria:
+      "Layout demonstrates clear visual hierarchy with obvious primary action",
+    artifact: "./tmp/dashboard.png", // Screenshot path
   });
   expect(result.pass).toBe(true);
 });
 
 // Example 3: Smart intelligence for complex judgment
-test('brand visual consistency', async () => {
-  await page.screenshot({ path: './tmp/homepage.png' });
+test("brand visual consistency", async () => {
+  await page.screenshot({ path: "./tmp/homepage.png" });
   const result = await createReview({
     criteria:
-      'Visual design maintains professional brand identity suitable for financial services while avoiding corporate sterility',
-    artifact: './tmp/homepage.png',
-    intelligence: 'smart', // Complex aesthetic judgment
+      "Visual design maintains professional brand identity suitable for financial services while avoiding corporate sterility",
+    artifact: "./tmp/homepage.png",
+    intelligence: "smart", // Complex aesthetic judgment
   });
   expect(result.pass).toBe(true);
 });

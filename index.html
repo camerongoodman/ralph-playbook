@@ -1584,7 +1584,7 @@
             </p>
             <!-- /HTML-ONLY -->
 
-            <h3><span class="section-icon">🔄</span> Outer Loop Control</h3>
+            <h3><span class="section-icon">🔄</span> Task Selection</h3>
 
             <p>Geoff's initial minimal form of `loop.sh` script:</p>
 
@@ -1643,7 +1643,7 @@
               </p>
             </div>
 
-            <h3>Inner Loop Control (Task Execution)</h3>
+            <h3>Task Execution</h3>
 
             <p>
               A single task execution has no hard technical limit. Control
@@ -1707,10 +1707,10 @@
                   <pre><code><span class="token-comment">#!/bin/bash</span>
 <span class="token-comment"># Usage: ./loop.sh [plan] [max_iterations]</span>
 <span class="token-comment"># Examples:</span>
-<span class="token-comment">#   ./loop.sh              # Build mode, unlimited iterations</span>
-<span class="token-comment">#   ./loop.sh 20           # Build mode, max 20 iterations</span>
-<span class="token-comment">#   ./loop.sh plan         # Plan mode, unlimited iterations</span>
-<span class="token-comment">#   ./loop.sh plan 5       # Plan mode, max 5 iterations</span>
+<span class="token-comment">#   ./loop.sh              # Build mode, unlimited tasks</span>
+<span class="token-comment">#   ./loop.sh 20           # Build mode, max 20 tasks</span>
+<span class="token-comment">#   ./loop.sh plan         # Plan mode, unlimited tasks</span>
+<span class="token-comment">#   ./loop.sh plan 5       # Plan mode, max 5 tasks</span>
 
 <span class="token-comment"># Parse arguments</span>
 <span class="token-keyword">if</span> [ <span class="token-string">"$1"</span> = <span class="token-string">"plan"</span> ]; <span class="token-keyword">then</span>
@@ -1719,7 +1719,7 @@
     PROMPT_FILE=<span class="token-string">"PROMPT_plan.md"</span>
     MAX_ITERATIONS=<span class="token-variable">${2:-0}</span>
 <span class="token-keyword">elif</span> [[ <span class="token-string">"$1"</span> =~ ^[0-9]+$ ]]; <span class="token-keyword">then</span>
-    <span class="token-comment"># Build mode with max iterations</span>
+    <span class="token-comment"># Build mode with max tasks</span>
     MODE=<span class="token-string">"build"</span>
     PROMPT_FILE=<span class="token-string">"PROMPT_build.md"</span>
     MAX_ITERATIONS=$1
@@ -1793,7 +1793,7 @@ CURRENT_BRANCH=$(<span class="token-function">git branch --show-current</span>)
             <h4>Max-Iterations</h4>
             <ul>
               <li>
-                Limits the <em>outer loop</em> (number of tasks attempted; NOT
+                Limits the task selection loop (number of tasks attempted; NOT
                 tool calls within a single task)
               </li>
               <li>
@@ -1804,7 +1804,7 @@ CURRENT_BRANCH=$(<span class="token-function">git branch --show-current</span>)
                 <code>./loop.sh</code> runs unlimited (manual stop with Ctrl+C)
               </li>
               <li>
-                <code>./loop.sh 20</code> runs max 20 iterations then stops
+                <code>./loop.sh 20</code> runs max 20 tasks then stops
               </li>
             </ul>
 
@@ -1876,7 +1876,7 @@ CURRENT_BRANCH=$(<span class="token-function">git branch --show-current</span>)
                 <tbody>
                   <tr>
                     <td><code>loop.sh</code></td>
-                    <td>Outer loop orchestration</td>
+                    <td>Task selection loop orchestration</td>
                     <td>You (setup)</td>
                   </tr>
                   <tr>
@@ -1905,7 +1905,7 @@ CURRENT_BRANCH=$(<span class="token-function">git branch --show-current</span>)
             <!-- /HTML-ONLY -->
 
             <h3><code>loop.sh</code></h3>
-            <p>The outer loop script that orchestrates Ralph iterations.</p>
+            <p>The task selection loop script that orchestrates Ralph iterations.</p>
             <p>
               See <a href="#loop-mechanics">Loop Mechanics</a> section for
               detailed implementation examples and configuration options.
